@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LeaderboardApi.Models;
 using StackExchange.Redis;
+
 namespace leaderboard.Controllers
 {
 
@@ -82,7 +83,7 @@ namespace leaderboard.Controllers
             Player player = new Player(nickname, 0);
             if (player.delete(nickname))
             {
-                this.HttpContext.Response.StatusCode = 204;
+                this.HttpContext.Response.StatusCode = 200;
                 return Json("");
             }
             this.HttpContext.Response.StatusCode = 404;
