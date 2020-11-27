@@ -10,22 +10,21 @@ namespace LeaderboardApi.Models
 {
     public class Player
     {
-        
+        // Atributos 
         public string Nickname { get; set; }
         public int Score { get; set; }
         private IDatabase Redis { get; set; }
+
+        // construtor 
         public Player(string nickname, int score)
         {
             this.Nickname = nickname;
             this.Score = score;
             this.Redis = redis();
         }
-        private static IDatabase redis()
-        {
-            ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost:6379");
-            return muxer.GetDatabase();
-        }
 
+  
+        // Metodos publicos
         public bool create()
         {
             string redis_response = this.Redis.StringGet(this.Nickname);
@@ -93,8 +92,7 @@ namespace LeaderboardApi.Models
             return false;
         }
       
-
-        // use operation true para adição e false para deletar
+        // Metodos privados
         private void add_list(string leaderbord)
         {
             leaderbord = leaderbord.Trim(new Char[] { '[', ']'});
@@ -168,6 +166,12 @@ namespace LeaderboardApi.Models
 
             }
             this.Redis.StringSet("leaderboard", redis_response + "]");
+        }
+        // Acesso ao banco de dados
+        private static IDatabase redis()
+        {
+            ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost:6379");
+            return muxer.GetDatabase();
         }
     }
 }

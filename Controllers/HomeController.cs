@@ -23,9 +23,7 @@ namespace leaderboard.Controllers
             return Json("");
         }
 
-
-
-        [HttpGet("{nickname}")]
+        [HttpGet("{nickname}", Name ="get")]
         public JsonResult Get(string nickname)
         {
             Player player = new Player(nickname, 0);
@@ -36,6 +34,34 @@ namespace leaderboard.Controllers
             }
             this.HttpContext.Response.StatusCode = 404;
             return Json("");
+        }
+
+        [HttpGet("leaderboard", Name ="get leaderboard")]
+        public JsonResult get_leaderboard()
+        {
+            ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost:6379");
+            IDatabase redis =  muxer.GetDatabase();
+            string redis_response = redis.StringGet("leaderboard");
+            redis_response = redis_response.Trim(new Char[] { '[', ']' });
+            string[] player_list = redis_response.Split("|");
+            (int, string)[]players =  new (int, string)[player_list.Length-1];
+            
+            for(int i=0; i < player_list.Length; i++)
+            {
+                string score = redis.StringGet(player_list[i]);
+                if (score != null)
+                {
+                    players[i] = (Int32.Parse(score), player_list[i]);  
+                }
+            }
+            Array.Sort(players);
+            Array.Reverse(players);
+            List<Player> leaderboard = new List<Player>();
+            for (int i = 0; i < players.Length; i++)
+            {
+                leaderboard.Add(new Player(players[i].Item2, players[i].Item1));
+            }
+                return Json(leaderboard);
         }
 
         [HttpPut("{nickname}", Name="update")]
