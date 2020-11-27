@@ -26,33 +26,58 @@ namespace LeaderboardApi.Models
             return muxer.GetDatabase();
         }
 
-        public Player save()
+        public bool create()
         {
-            this.Redis.StringSet(this.Nickname, this.Score);
-            string redis_response = this.Redis.StringGet("leaderboard");
-            if (redis_response==null) {
-                this.Redis.StringSet("leaderboard", this.Nickname+"|");
-            }
-            else
+            string redis_response = this.Redis.StringGet(this.Nickname);
+            if (redis_response == null)
             {
-                list_player(true);
+                this.Redis.StringSet(this.Nickname, this.Score);
+                redis_response = this.Redis.StringGet("leaderboard");
+                if (redis_response==null) {
+                    this.Redis.StringSet("leaderboard", this.Nickname+"|");
+                }
+                else
+                {
+                    add_list(redis_response);
+                }
+                return true;
+
             }
-            return this;
+            return false;
         }
 
+        public Player update(string nickname)
+        {
+            string redis_response = this.Redis.StringGet(nickname);
+            if (redis_response != null)
+            {
+                if (this.Nickname != nickname)
+                {
+                    this.Redis.KeyDelete(nickname);
+                }
+                redis_response = this.Redis.StringGet(this.Nickname);
+                if (redis_response != null)
+                {
+                    return null;
+                }
+                this.Redis.StringSet(this.Nickname, this.Score);
+                
+                update_list(nickname);
+                return this;
+
+            }
+            return null;
+        }
       
 
         // use operation true para adição e false para deletar
-        private string list_player(bool operation)
+        private void add_list(string leaderbord)
         {
-            string redis_response = this.Redis.StringGet("leaderboard");
-            redis_response = redis_response.Trim(new Char[] { '[', ']'});
-            if (operation)
-            {
-                redis_response = redis_response + this.Nickname;
-            }
+            leaderbord = leaderbord.Trim(new Char[] { '[', ']'});
+            leaderbord = leaderbord + this.Nickname;
+            
          
-            string[] player_list = redis_response.Split("|");
+            string[] player_list = leaderbord.Split("|");
             /*(string, int)[] players = null;
 
             for(int i=0; i < player_list.Length; i++)
@@ -62,13 +87,39 @@ namespace LeaderboardApi.Models
             }
             Array.Sort(players);
             */
-            redis_response = "[";
+            leaderbord = "[";
             foreach(string player in player_list)
             {
-                redis_response = $"{redis_response}{player}|";
+                leaderbord = $"{leaderbord}{player}|";
             }
-            this.Redis.StringSet("leaderboard",redis_response + "]");
-            return "";
+            this.Redis.StringSet("leaderboard", leaderbord + "]");   
+        }
+
+        private void update_list(string nickname)
+        {
+            string redis_response = this.Redis.StringGet("leaderboard");
+            redis_response = redis_response.Trim(new Char[] { '[', ']' });
+
+
+            string[] player_list = redis_response.Split("|");
+
+            redis_response = "[";
+            foreach (string player in player_list)
+            {
+                if(player != "")
+                {
+                    if (nickname == player)
+                    {
+                        redis_response = $"{redis_response}{this.Nickname}|";
+                    }
+                    else
+                    {
+                        redis_response = $"{redis_response}{player}|";
+                    }
+                }
+                
+            }
+            this.Redis.StringSet("leaderboard", redis_response + "]");
         }
     }
 }

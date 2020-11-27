@@ -14,17 +14,36 @@ namespace leaderboard.Controllers
         [HttpPost]
         public JsonResult Index([FromBody] Player player)
         {
-            this.HttpContext.Response.StatusCode = 201;
-            return Json(player.save());
+            if (player.create())
+            {
+                this.HttpContext.Response.StatusCode = 201;
+                return Json(player);
+            }
+            this.HttpContext.Response.StatusCode = 400;
+            string response = "{status:bad request}";
+            return Json(response);
         }
 
 
-        // 
-        // GET: /HelloWorld/Welcome/ 
 
-        public string Welcome()
+        [HttpGet("{nickname}")]
+        public string Get(string nickname)
         {
-            return "This is the Welcome action method...";
+
+            return "";
+        }
+
+        [HttpPut("{nickname}", Name="update")]
+        public JsonResult Put([FromBody] Player player, string nickname)
+        {
+            Player updated_player = player.update(nickname);
+            if (updated_player!=null)
+            {
+                return Json(updated_player);
+            }
+            this.HttpContext.Response.StatusCode = 400;
+            string response = "{status:bad request}";
+            return Json(response);
         }
     }
 }
