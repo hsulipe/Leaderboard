@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-
+using LeaderboardApi.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace leaderboard
 {
@@ -20,6 +21,8 @@ namespace leaderboard
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddDbContext<PlayerContext>(options =>
+                options.UseSqlite("Data source=player.db"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
