@@ -46,6 +46,18 @@ namespace LeaderboardApi.Models
             return false;
         }
 
+        public Player getPlayer(string nickname)
+        {
+            string redis_response = this.Redis.StringGet(nickname);
+            if (redis_response != null)
+            {
+                this.Nickname = nickname;
+                this.Score = Int32.Parse(redis_response);
+                return this;
+            }
+            return null;
+        }
+
         public Player update(string nickname)
         {
             string redis_response = this.Redis.StringGet(nickname);
@@ -67,6 +79,18 @@ namespace LeaderboardApi.Models
 
             }
             return null;
+        }
+
+        public bool delete(string nickname)
+        {
+            string redis_response = this.Redis.StringGet(nickname);
+            if (redis_response!=null)
+            {
+                this.Redis.KeyDelete(nickname);
+                delete_list(nickname);
+                return true;
+            }
+            return false;
         }
       
 
@@ -118,6 +142,30 @@ namespace LeaderboardApi.Models
                     }
                 }
                 
+            }
+            this.Redis.StringSet("leaderboard", redis_response + "]");
+        }
+
+        private void delete_list(string nickname)
+        {
+            string redis_response = this.Redis.StringGet("leaderboard");
+            redis_response = redis_response.Trim(new Char[] { '[', ']' });
+
+
+            string[] player_list = redis_response.Split("|");
+
+            redis_response = "[";
+            foreach (string player in player_list)
+            {
+                if (player != "")
+                {
+                    if (nickname != player)
+                    {
+                        redis_response = $"{redis_response}{player}|";
+                        
+                    } 
+                }
+
             }
             this.Redis.StringSet("leaderboard", redis_response + "]");
         }

@@ -20,17 +20,22 @@ namespace leaderboard.Controllers
                 return Json(player);
             }
             this.HttpContext.Response.StatusCode = 400;
-            string response = "{status:bad request}";
-            return Json(response);
+            return Json("");
         }
 
 
 
         [HttpGet("{nickname}")]
-        public string Get(string nickname)
+        public JsonResult Get(string nickname)
         {
-
-            return "";
+            Player player = new Player(nickname, 0);
+            player = player.getPlayer(nickname);
+            if (player!=null)
+            {
+                return Json(player);
+            }
+            this.HttpContext.Response.StatusCode = 404;
+            return Json("");
         }
 
         [HttpPut("{nickname}", Name="update")]
@@ -42,8 +47,20 @@ namespace leaderboard.Controllers
                 return Json(updated_player);
             }
             this.HttpContext.Response.StatusCode = 400;
-            string response = "{status:bad request}";
-            return Json(response);
+            return Json("");
+        }
+
+        [HttpDelete("{nickname}", Name ="delete")]
+        public JsonResult Delete(string nickname)
+        {
+            Player player = new Player(nickname, 0);
+            if (player.delete(nickname))
+            {
+                this.HttpContext.Response.StatusCode = 204;
+                return Json("");
+            }
+            this.HttpContext.Response.StatusCode = 404;
+            return Json("");
         }
     }
 }
