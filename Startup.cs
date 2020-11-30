@@ -1,3 +1,7 @@
+using Leaderboard.Infrastructure.Redis;
+using Leaderboard.Infrastructure.Redis.Impl;
+using Leaderboard.Services.Leaderboards;
+using Leaderboard.Services.Leaderboards.Impl;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +24,14 @@ namespace leaderboard
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+
+            // No use of Dependency Injection
+
+
+            // Dependency Injection
+            services.AddSingleton<IRedisConnection, RedisConnection>();
+            services.AddScoped<ILeaderboardService, LeaderboardService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

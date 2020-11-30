@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Leaderboard.Models;
+using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using LeaderboardApi.Models;
-using StackExchange.Redis;
+using Leaderboard.Services.Leaderboards;
 
 namespace leaderboard.Controllers
 {
@@ -12,82 +11,113 @@ namespace leaderboard.Controllers
     [Route("api/[controller]")]
     public class PlayerController : Controller
     {
-        [HttpPost]
-        public JsonResult Index([FromBody] Player player)
+        private readonly ILeaderboardService _leaderboardService;
+
+        public PlayerController(ILeaderboardService leaderboardService)
         {
-            if (player.create())
+            _leaderboardService = leaderboardService;
+        }
+
+        [HttpPost]
+        // Use ActionResult is better than just JsonResult
+        public ActionResult<Player> Index([FromBody] Player player)
+        {
+            try
             {
-                this.HttpContext.Response.StatusCode = 201;
-                return Json(player);
+                _leaderboardService.AddAsync(player).GetAwaiter().GetResult();
+                return Ok(player);
             }
-            this.HttpContext.Response.StatusCode = 400;
-            return Json("");
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
         }
 
         [HttpGet("{nickname}", Name ="get")]
-        public JsonResult Get(string nickname)
+        public ActionResult<Player> Get(string nickname)
         {
-            Player player = new Player(nickname, 0);
-            player = player.getPlayer(nickname);
-            if (player!=null)
+            try
             {
-                return Json(player);
+                return Ok(_leaderboardService.GetByAsync(nickname).GetAwaiter().GetResult());
             }
-            this.HttpContext.Response.StatusCode = 404;
-            return Json("");
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
         }
 
         [HttpGet("leaderboard", Name ="get leaderboard")]
-        public JsonResult get_leaderboard()
+        public ActionResult<Player[]> get_leaderboard()
         {
-            ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost:6379");
-            IDatabase redis =  muxer.GetDatabase();
-            string redis_response = redis.StringGet("leaderboard");
-            redis_response = redis_response.Trim(new Char[] { '[', ']' });
-            string[] player_list = redis_response.Split("|");
-            (int, string)[]players =  new (int, string)[player_list.Length-1];
-            
-            for(int i=0; i < player_list.Length; i++)
+            try
             {
-                string score = redis.StringGet(player_list[i]);
-                if (score != null)
-                {
-                    players[i] = (Int32.Parse(score), player_list[i]);  
-                }
+                return Ok(_leaderboardService.GetAsync().GetAwaiter().GetResult());
             }
-            Array.Sort(players);
-            Array.Reverse(players);
-            List<Player> leaderboard = new List<Player>();
-            for (int i = 0; i < players.Length; i++)
+            catch (Exception)
             {
-                leaderboard.Add(new Player(players[i].Item2, players[i].Item1));
+                return BadRequest();
             }
-                return Json(leaderboard);
+
+            // Duplication of code
+
+            //ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost:6379");
+            //IDatabase redis =  muxer.GetDatabase();
+            //string redis_response = redis.StringGet("leaderboard");
+            //redis_response = redis_response.Trim(new Char[] { '[', ']' });
+            //string[] player_list = redis_response.Split("|");
+            //(int, string)[]players =  new (int, string)[player_list.Length-1];
+
+            //for(int i=0; i < player_list.Length; i++)
+            //{
+            //    string score = redis.StringGet(player_list[i]);
+            //    if (score != null)
+            //    {
+            //        players[i] = (Int32.Parse(score), player_list[i]);  
+            //    }
+            //}
+            //Array.Sort(players);
+            //Array.Reverse(players);
+            //List<Player> leaderboard = new List<Player>();
+            //for (int i = 0; i < players.Length; i++)
+            //{
+            //    leaderboard.Add(new Player(players[i].Item2, players[i].Item1));
+            //}
+            //    return Json(leaderboard);
         }
 
-        [HttpPut("{nickname}", Name="update")]
-        public JsonResult Put([FromBody] Player player, string nickname)
-        {
-            Player updated_player = player.update(nickname);
-            if (updated_player!=null)
-            {
-                return Json(updated_player);
-            }
-            this.HttpContext.Response.StatusCode = 400;
-            return Json("");
-        }
+        // Not Necessary
+
+        //[HttpPut("{nickname}", Name="update")]
+        //public JsonResult Put([FromBody] Player player, string nickname)
+        //{
+        //    Player updated_player = player.update(nickname);
+        //    if (updated_player!=null)
+        //    {
+        //        return Json(updated_player);
+        //    }
+        //    this.HttpContext.Response.StatusCode = 400;
+        //    return Json("");
+        //}
 
         [HttpDelete("{nickname}", Name ="delete")]
-        public JsonResult Delete(string nickname)
+        public ActionResult<bool> Delete(string nickname)
         {
-            Player player = new Player(nickname, 0);
-            if (player.delete(nickname))
+            try
             {
-                this.HttpContext.Response.StatusCode = 200;
-                return Json("");
+                return Ok(_leaderboardService.RemoveByAsync(nickname).GetAwaiter().GetResult());
             }
-            this.HttpContext.Response.StatusCode = 404;
-            return Json("");
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            //Player player = new Player(nickname, 0);
+            //if (player.delete(nickname))
+            //{
+            //    this.HttpContext.Response.StatusCode = 200;
+            //    return Json("");
+            //}
+            //this.HttpContext.Response.StatusCode = 404;
+            //return Json("");
         }
     }
 }
